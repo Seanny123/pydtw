@@ -9,7 +9,7 @@ import os
 
 ext_modules=[
     Extension("dtw",
-              sources=["dtw.c", "ucr_dtw.c", "deque.c"],
+              sources=["src/dtw.c", "src/ucr_dtw.c", "src/deque.c"],
               #sources=["dtw.pyx", "ucr_dtw.c", "deque.c"],
               include_dirs=[numpy.get_include()],
               extra_compile_args=['-O2', '-Wall', '-fPIC', '-pedantic', '-Wextra'],
