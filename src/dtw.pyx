@@ -26,6 +26,8 @@ def query(float64[::1] data not None, float64[::1] query not None, float64 r):
     n_data = data.shape[0]
     n_query= query.shape[0]
     return_code = ucr_query(&query[0], n_query, r, &data[0], n_data, &result)
+    if(return_code !=0):
+        result.index = -1
     return result
 
 
