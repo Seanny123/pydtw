@@ -20,6 +20,7 @@ ext_modules=[
 setup(
   name = "dtw",
   #ext_modules = cythonize(ext_modules)
+  install_requires=[ 'numpy' ],
   ext_modules = ext_modules
 )
 
