@@ -1,6 +1,8 @@
 ### pydtw
 `pydtw` is a simple python wrapper of `libdtw`, which is a fast, dynamic time warping library based on the [UCR Suite](http://www.cs.ucr.edu/~eamonn/UCRsuite.html). 
 
+Works for Python 3, but not for Windows, because I don't understand the Windows C compiler.
+
 
 ### Install
 
