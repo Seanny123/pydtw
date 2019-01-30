@@ -93,7 +93,7 @@ ucr_lower_upper_lemire(double *t, int len, int r, double *l, double *u)
         }
         else if (i == 2 * r + 1 + deq_front(&dl))
         {
-            deq_pop_front(&dl);            
+            deq_pop_front(&dl);
         }
     }
 
@@ -224,7 +224,7 @@ ucr_lb_keogh_cumulative(int* order, double *t, double *uo, double *lo, double *c
 /// cb: (output) current bound at each position. Used later for early abandoning in DTW.
 /// l, u: lower and upper envelop of the current data
 double
-ucr_lb_keogh_data_cumulative(int* order, double *tz, double *qo, double *cb, double *l, double *u,
+ucr_lb_keogh_data_cumulative(int* order, double *qo, double *cb, double *l, double *u,
                              int len, double mean, double std, double bsf)
 {
     double  lb = 0;
@@ -253,7 +253,8 @@ ucr_lb_keogh_data_cumulative(int* order, double *tz, double *qo, double *cb, dou
 /// Calculate Dynamic Time Wrapping distance
 /// A,B: data and query, respectively
 /// cb : cummulative bound used for early abandoning
-/// r  : size of Sakoe-Chiba warpping band
+/// r  : size of Sakoe-Chiba warping band
+/// bsf : best so far
 double
 ucr_dtw(double* A, double* B, double *cb, int m, int r, double bsf)
 {
@@ -320,9 +321,9 @@ ucr_dtw(double* A, double* B, double *cb, int m, int r, double bsf)
         cost = cost_prev;
         cost_prev = cost_tmp;
     }
-    k--;
 
     /// the DTW distance is in the last cell in the matrix of size O(m^2) or at the middle of our array.
+    k--;
     double final_dtw = cost_prev[k];
     free(cost);
     free(cost_prev);
@@ -408,7 +409,7 @@ ucr_query_new(double *query, int32_t m, double r)
     }
     qsort(q_tmp, m, sizeof(struct ucr_index), ucr_comp);
 
-    /// also create another arrays for keeping sorted envelope
+    /// also create another set of arrays for keeping sorted envelope
     for(i = 0; i < m; i++)
     {
         o = q_tmp[i].index;
@@ -552,17 +553,10 @@ ucr_query_execute(struct ucr_query *query, struct ucr_buffer *buffer, struct ucr
                 lb_k = ucr_lb_keogh_cumulative(order, t, uo, lo, cb1, j, m, mean, std, bsf);
                 if (lb_k < bsf)
                 {
-                    /// Take another linear time to compute z_normalization of t.
-                    /// Note that for better optimization, this can merge to the previous function.
-                    for(k = 0; k < m; k++)
-                    {
-                        tz[k] = (t[(k + j)] - mean) / std;
-                    }
-
                     /// Use another lb_keogh to prune
-                    /// qo is the sorted query. tz is unsorted z_normalized data.
+                    /// qo is the sorted query
                     /// l_buff, u_buff are big envelop for all data in this chunk
-                    lb_k2 = ucr_lb_keogh_data_cumulative(order, tz, qo, cb2, l_buff + I, u_buff + I, m, mean, std, bsf);
+                    lb_k2 = ucr_lb_keogh_data_cumulative(order, qo, cb2, l_buff + I, u_buff + I, m, mean, std, bsf);
                     if (lb_k2 < bsf)
                     {
                         /// Choose better lower bound between lb_keogh and lb_keogh2 to be used in early abandoning DTW
@@ -580,6 +574,14 @@ ucr_query_execute(struct ucr_query *query, struct ucr_buffer *buffer, struct ucr
                                 cb[k] = cb[k + 1] + cb2[k];
                         }
 
+                        /// Take another linear time to compute z_normalization of t.
+                        /// Note that for better optimization, this can merged with ucr_lb_keogh_cumulative
+                        /// since it technically also computes this
+                        for(k = 0; k < m; k++)
+                        {
+                            tz[k] = (t[(k + j)] - mean) / std;
+                        }
+
                         /// Compute DTW and early abandoning if possible
                         dist = ucr_dtw(tz, q, cb, m, r, bsf);
 
@@ -587,7 +589,7 @@ ucr_query_execute(struct ucr_query *query, struct ucr_buffer *buffer, struct ucr
                         {   /// Update bsf
                             /// loc is the real starting location of the nearest neighbor in the file
                             bsf = dist;
-                            loc = i - m + 1;
+                            loc = I;
                         }
                     }
                 }
@@ -626,6 +628,8 @@ query_execute_cleanup:
     return 0;
 }
 
+/// the entry point for Python bindings
+// m is the query size
 int32_t
 ucr_query(double* query, int32_t m, double r, double* values, int32_t vlen, struct ucr_index *result)
 {

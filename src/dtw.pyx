@@ -29,5 +29,3 @@ def query(float64[::1] data not None, float64[::1] query not None, float64 r):
     if return_code != 0:
         result.index = -1
     return result
-
-
