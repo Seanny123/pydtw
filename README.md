@@ -30,3 +30,8 @@ results = dtw.query(data, query, r=0.05)
   * `results["index"]` : the index of the first element in the best matching sequence in the data. 
   * `results["value"]` : the DTW distance between the query and the matching sequence in the data.
 
+### TODO
+
+- Move all bound calculations into a seperate file
+- Rename variables to vaguely intuitive names
+- Extract Keogh bound dtw_dist calc into function
