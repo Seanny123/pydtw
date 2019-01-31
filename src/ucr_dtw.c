@@ -50,7 +50,7 @@ ucr_comp(const void *a, const void* b)
 /// Implementation idea is intoruduced by Danial Lemire in his paper
 /// "Faster Retrieval with a Two-Pass Dynamic-Time-Warping Lower Bound", Pattern Recognition 42(9), 2009.
 void
-ucr_lower_upper_lemire(double *t, int len, int r, double *l, double *u)
+lower_upper_lemire(double *t, int len, int r, double *l, double *u)
 {
     struct deque du, dl;
     int i = 0;
@@ -190,7 +190,7 @@ ucr_lb_kim_hierarchy(double *t, double *q, int j, int len, double mean, double s
 /// j     : index of the starting location in t
 /// cb    : (output) current bound at each position. It will be used later for early abandoning in DTW.
 double
-ucr_lb_keogh_cumulative(int* order, double *t, double *uo, double *lo, double *cb, int j, int len,
+lower_bound_keogh_query(int* order, double *t, double *uo, double *lo, double *cb, int j, int len,
                         double mean, double std, double bsf)
 {
     double  lb = 0;
@@ -224,7 +224,7 @@ ucr_lb_keogh_cumulative(int* order, double *t, double *uo, double *lo, double *c
 /// cb: (output) current bound at each position. Used later for early abandoning in DTW.
 /// l, u: lower and upper envelop of the current data
 double
-ucr_lb_keogh_data_cumulative(int* order, double *qo, double *cb, double *l, double *u,
+lower_bound_keogh_data(int* order, double *qo, double *cb, double *l, double *u,
                              int len, double mean, double std, double bsf)
 {
     double  lb = 0;
@@ -395,7 +395,7 @@ ucr_query_new(double *query, int32_t m, double r)
     }
 
     /// Create envelope of the query: lower envelope, l, and upper envelope, u
-    ucr_lower_upper_lemire(udq->q, udq->m, udq->r, udq->l, udq->u);
+    lower_upper_lemire(udq->q, udq->m, udq->r, udq->l, udq->u);
 
     q_tmp = (struct ucr_index*)malloc(sizeof(struct ucr_index) * m);
     if(q_tmp == NULL)
@@ -512,7 +512,7 @@ ucr_query_execute(struct ucr_query *query, struct ucr_buffer *buffer, struct ucr
     if(l_buff == NULL)
         goto query_execute_cleanup;
 
-    ucr_lower_upper_lemire(buffer->data, buffer->len, r, l_buff, u_buff);
+    lower_upper_lemire(buffer->data, buffer->len, r, l_buff, u_buff);
 
     /// Do main task here..
     ex = ex2 = 0;
@@ -550,13 +550,13 @@ ucr_query_execute(struct ucr_query *query, struct ucr_buffer *buffer, struct ucr
             {
                 /// Use a linear time lower bound to prune; z_normalization of t will be computed on the fly.
                 /// uo, lo are envelop of the query.
-                lb_k = ucr_lb_keogh_cumulative(order, t, uo, lo, cb1, j, m, mean, std, bsf);
+                lb_k = lower_bound_keogh_query(order, t, uo, lo, cb1, j, m, mean, std, bsf);
                 if (lb_k < bsf)
                 {
                     /// Use another lb_keogh to prune
                     /// qo is the sorted query
                     /// l_buff, u_buff are big envelop for all data in this chunk
-                    lb_k2 = ucr_lb_keogh_data_cumulative(order, qo, cb2, l_buff + I, u_buff + I, m, mean, std, bsf);
+                    lb_k2 = lower_bound_keogh_data(order, qo, cb2, l_buff + I, u_buff + I, m, mean, std, bsf);
                     if (lb_k2 < bsf)
                     {
                         /// Choose better lower bound between lb_keogh and lb_keogh2 to be used in early abandoning DTW
@@ -575,7 +575,7 @@ ucr_query_execute(struct ucr_query *query, struct ucr_buffer *buffer, struct ucr
                         }
 
                         /// Take another linear time to compute z_normalization of t.
-                        /// Note that for better optimization, this can merged with ucr_lb_keogh_cumulative
+                        /// Note that for better optimization, this can merged with lower_bound_keogh_query
                         /// since it technically also computes this
                         for(k = 0; k < m; k++)
                         {
@@ -595,7 +595,7 @@ ucr_query_execute(struct ucr_query *query, struct ucr_buffer *buffer, struct ucr
                 }
             }
 
-            /// Reduce obsolute points from sum and sum square
+            /// Reduce obsolete points from sum and sum square
             ex -= t[j];
             ex2 -= t[j] * t[j];
         }
