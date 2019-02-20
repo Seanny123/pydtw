@@ -30,3 +30,6 @@ results = dtw.query(data, query, r=0.05)
   * `results["index"]` : the index of the first element in the best matching sequence in the data. 
   * `results["value"]` : the DTW distance between the query and the matching sequence in the data.
 
+### Known Issues
+
+- The first element of the time-series is removed when translating from Python to C. I dont't know enough about Python -> C to fix this and it doesn't really matter for my purposes.
