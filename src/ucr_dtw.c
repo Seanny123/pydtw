@@ -39,11 +39,21 @@
 
 /// Sorting function for the query, sort by abs(z_norm(q[i])) from high to low
 int
-ucr_comp(const void *a, const void* b)
+ucr_comp(const void *a, const void *b)
 {
-    struct ucr_index* x = (struct ucr_index*)a;
-    struct ucr_index* y = (struct ucr_index*)b;
-    return abs((int64_t)(y->value)) - abs((int64_t)(x->value));   // high to low
+    const struct ucr_index* x = (const struct ucr_index*)a;
+    const struct ucr_index* y = (const struct ucr_index*)b;
+
+    if (fabs(x->value) > fabs(y->value)) {
+        return -1;
+    }
+    else if (fabs(x->value) < fabs(y->value)) {
+        return 1;
+    }
+    else
+    {
+        return 0;
+    }
 }
 
 /// Finding the envelop of min and max value for LB_Keogh
