@@ -39,11 +39,21 @@
 
 /// Sorting function for the query, sort by abs(z_norm(q[i])) from high to low
 int
-ucr_comp(const void *a, const void* b)
+ucr_comp(const void *a, const void *b)
 {
-    struct ucr_index* x = (struct ucr_index*)a;
-    struct ucr_index* y = (struct ucr_index*)b;
-    return abs((int64_t)(y->value)) - abs((int64_t)(x->value));   // high to low
+    const struct ucr_index* x = (const struct ucr_index*)a;
+    const struct ucr_index* y = (const struct ucr_index*)b;
+
+    if (fabs(x->value) > fabs(y->value)) {
+        return -1;
+    }
+    else if (fabs(x->value) < fabs(y->value)) {
+        return 1;
+    }
+    else
+    {
+        return 0;
+    }
 }
 
 /// Finding the envelop of min and max value for LB_Keogh
@@ -68,6 +78,7 @@ lower_upper_lemire(double *t, int len, int r, double *l, double *u)
             u[i - r - 1] = t[deq_front(&du)];
             l[i - r - 1] = t[deq_front(&dl)];
         }
+
         if (t[i] > t[i - 1])
         {
             deq_pop_back(&du);
@@ -121,7 +132,7 @@ lower_upper_lemire(double *t, int len, int r, double *l, double *u)
 /// And using the first and last points can be computed in constant time.
 /// The prunning power of LB_Kim is non-trivial, especially when the query is not long, say in length 128.
 double
-ucr_lb_kim_hierarchy(double *t, double *q, int j, int len, double mean, double std, double bsf)
+lower_bound_kim(double *t, double *q, int j, int len, double mean, double std, double bsf)
 {
     /// 1 point at front and back
     double d, lb;
@@ -458,7 +469,7 @@ ucr_query_execute(struct ucr_query *query, struct ucr_buffer *buffer, struct ucr
     double          *q, *cb, *cb1, *cb2;
     double          *qo, *uo, *lo;
     double          *t, *tz, *u_buff, *l_buff;
-    int64_t         i = 0, j = 0, I = 0, loc = -1;
+    int64_t         i = 0, s_off = 0, s_bound_off = 0, loc = -1;
     int32_t         *order;
     int32_t         r, m, k = 0;
 
@@ -539,24 +550,26 @@ ucr_query_execute(struct ucr_query *query, struct ucr_buffer *buffer, struct ucr
             std = sqrt(std - mean * mean);
 
             /// compute the start location of the data in the current circular array, t
-            j = (i + 1) % m;
+            s_off = (i + 1) % m;
             /// the start location of the data in the current chunk
-            I = i - (m - 1);
+            s_bound_off = i - (m - 1);
 
             /// Use a constant lower bound to prune the obvious subsequence
-            lb_kim = ucr_lb_kim_hierarchy(t, q, j, m, mean, std, bsf);
+            lb_kim = lower_bound_kim(t, q, s_off, m, mean, std, bsf);
 
             if (lb_kim < bsf)
             {
                 /// Use a linear time lower bound to prune; z_normalization of t will be computed on the fly.
                 /// uo, lo are envelop of the query.
-                lb_k = lower_bound_keogh_query(order, t, uo, lo, cb1, j, m, mean, std, bsf);
+                lb_k = lower_bound_keogh_query(order, t, uo, lo, cb1, s_off, m, mean, std, bsf);
+
                 if (lb_k < bsf)
                 {
                     /// Use another lb_keogh to prune
                     /// qo is the sorted query
                     /// l_buff, u_buff are big envelop for all data in this chunk
-                    lb_k2 = lower_bound_keogh_data(order, qo, cb2, l_buff + I, u_buff + I, m, mean, std, bsf);
+                    lb_k2 = lower_bound_keogh_data(order, qo, cb2, l_buff + s_bound_off, u_buff + s_bound_off, m, mean, std, bsf);
+
                     if (lb_k2 < bsf)
                     {
                         /// Choose better lower bound between lb_keogh and lb_keogh2 to be used in early abandoning DTW
@@ -579,7 +592,7 @@ ucr_query_execute(struct ucr_query *query, struct ucr_buffer *buffer, struct ucr
                         /// since it technically also computes this
                         for(k = 0; k < m; k++)
                         {
-                            tz[k] = (t[(k + j)] - mean) / std;
+                            tz[k] = (t[(k + s_off)] - mean) / std;
                         }
 
                         /// Compute DTW and early abandoning if possible
@@ -589,15 +602,15 @@ ucr_query_execute(struct ucr_query *query, struct ucr_buffer *buffer, struct ucr
                         {   /// Update bsf
                             /// loc is the real starting location of the nearest neighbor in the file
                             bsf = dist;
-                            loc = I;
+                            loc = s_bound_off;
                         }
                     }
                 }
             }
 
             /// Reduce obsolete points from sum and sum square
-            ex -= t[j];
-            ex2 -= t[j] * t[j];
+            ex -= t[s_off];
+            ex2 -= t[s_off] * t[s_off];
         }
     }
 
