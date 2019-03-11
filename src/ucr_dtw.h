@@ -56,3 +56,14 @@ ucr_query_execute(struct ucr_query *query, struct ucr_buffer *buffer, struct ucr
 
 int32_t
 ucr_query(double *q, int32_t m, double r, double *buffer, int32_t buflen, struct ucr_index *result);
+
+double
+lower_bound_kim(double *t, double *q, int j, int len, double mean, double std, double bsf);
+
+double
+lower_bound_keogh_query(int *order, double *t, double *uo, double *lo, double *cb, int j, int len,
+                        double mean, double std, double bsf);
+
+double
+lower_bound_keogh_data(int* order, double *qo, double *cb, double *l, double *u,
+                       int len, double mean, double std, double bsf);

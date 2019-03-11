@@ -25,6 +25,8 @@
 /***********************************************************************/
 /***********************************************************************/
 
+// Compile with g++ integ_test.c ../src/ucr_dtw.c ../src/deque.c -I ../src -o integ_test
+
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -54,11 +56,11 @@ main(int argc , char *argv[])
     if (argc >= 4)
         r = atof(argv[4]);
 
-    fp = fopen(argv[1],"r");
+    fp = fopen(argv[1], "r");
     if(fp == NULL)
         exit(1);
 
-    qp = fopen(argv[2],"r");
+    qp = fopen(argv[2], "r");
     if(qp == NULL)
         exit(1);
 
@@ -73,7 +75,7 @@ main(int argc , char *argv[])
     i = 0;
     j = 0;
 
-    while(fscanf(qp,"%lf",&d) != EOF && i < m)
+    while(fscanf(qp, "%lf", &d) != EOF && i < m)
     {
         q[i] = d;
         i++;
@@ -90,7 +92,7 @@ main(int argc , char *argv[])
         if (it == 0)
         {   
             for(k = 0; k < m - 1; k++)
-                if (fscanf(fp,"%lf",&d) != EOF)
+                if (fscanf(fp, "%lf", &d) != EOF)
                     buffer[k] = d;
         }
         else
@@ -103,7 +105,7 @@ main(int argc , char *argv[])
         ep = m - 1;
         while(ep < EPOCH)
         {   
-            if (fscanf(fp,"%lf",&d) == EOF)
+            if (fscanf(fp, "%lf", &d) == EOF)
                 break;
             buffer[ep] = d;
             ep++;
@@ -123,7 +125,7 @@ main(int argc , char *argv[])
                 exit(1);
             }
 
-            printf("Location : %lli\n", result.index + (it)*(EPOCH-m+1));
+            printf("Location : %li\n", result.index + (it)*(EPOCH-m+1));
             printf("Distance : %2.5f\n", result.value);
         }
         it++;

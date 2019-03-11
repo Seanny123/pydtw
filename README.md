@@ -30,8 +30,14 @@ results = dtw.query(data, query, r=0.05)
   * `results["index"]` : the index of the first element in the best matching sequence in the data. 
   * `results["value"]` : the DTW distance between the query and the matching sequence in the data.
 
+### Known issues
+
+- A bug exists between the Python and C interface, such that the first item in the passed Python array is ignored.
+
 ### TODO
 
 - Move all bound calculations into a seperate file
 - Rename variables to vaguely intuitive names
-- Extract Keogh bound dtw_dist calc into function
+- Extract Keogh bound enveloppe_dist calc into function
+- Create unit tests for all Keogh bound functions
+- Create a build system to properly compile and run the tests
